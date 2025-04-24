@@ -41,7 +41,3 @@ func main() {
 
 	app.Listen(*listenAddr)
 }
-
-func handleRoot(c *fiber.Ctx) error {
-	return c.JSON(map[string]string{"message": "All things in my life going very nicly."})
-}
