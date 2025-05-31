@@ -42,12 +42,12 @@ func (h *UserHandler) HandlePostUser(c *fiber.Ctx) error {
 
 	user, err := types.NewUserFromParams(userParams)
 	if err != nil {
-		return err
+		return c.JSON(err)
 	}
 
-	insertedUser, err := h.userStore.InsertUser(c.Context(), user)
-	if err != nil {
-		return err
+	insertedUser, er := h.userStore.InsertUser(c.Context(), user)
+	if er != nil {
+		return er
 	}
 
 	return c.JSON(insertedUser)
