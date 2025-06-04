@@ -1,11 +1,17 @@
 package api
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
+	"net/http/httptest"
 	"testing"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/pdrm26/hotel-reservation/db"
+	"github.com/pdrm26/hotel-reservation/types"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -35,15 +41,15 @@ func TestHandlePostUser_Success(t *testing.T) {
 	db := setup(t)
 	defer db.teardown(t)
 
-	// userParams := types.CreateUserParams{FirstName: "Pedram", LastName: "BR", Email: "p@gmail.com", Password: "123"}
+	app := fiber.New()
+	userHandler := NewUserHandler(db.UserStore)
 
-	// user, err := types.NewUserFromParams(userParams)
-	// if err != nil {
-	// 	t.Fail(err)
-	// }
+	app.Post("/", userHandler.HandlePostUser)
 
-	// if err := testStore.InsertUser(context.Context(), user); err != nil {
-	// 	t.Fail(err)
-	// }
-
+	params := types.CreateUserParams{FirstName: "Negar", LastName: "Yekta", Email: "negar@gmail.com", Password: "123456Negar"}
+	b, _ := json.Marshal(params)
+	req := httptest.NewRequest("POST", "/", bytes.NewReader(b))
+	req.Header.Add("Content-Type", "application/json")
+	resp, _ := app.Test(req)
+	fmt.Println(resp.Status)
 }
