@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http/httptest"
 	"testing"
@@ -51,5 +50,22 @@ func TestHandlePostUser_Success(t *testing.T) {
 	req := httptest.NewRequest("POST", "/", bytes.NewReader(b))
 	req.Header.Add("Content-Type", "application/json")
 	resp, _ := app.Test(req)
-	fmt.Println(resp.Status)
+	var user types.User
+	json.NewDecoder(resp.Body).Decode(&user)
+
+	if len(user.ID) == 0 {
+		t.Errorf("Expected a userID to be set")
+	}
+	if len(user.EncryptedPassword) > 0 {
+		t.Errorf("Expected EncryptedPassword not to be in the json response")
+	}
+	if user.FirstName != params.FirstName {
+		t.Errorf("Expected firstname %s but got %s", params.FirstName, user.FirstName)
+	}
+	if user.LastName != params.LastName {
+		t.Errorf("Expected lastname %s but got %s", params.LastName, user.LastName)
+	}
+	if user.Email != params.Email {
+		t.Errorf("Expected email %s but got %s", params.Email, user.Email)
+	}
 }
