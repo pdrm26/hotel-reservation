@@ -20,7 +20,7 @@ func setup(t *testing.T) *testdb {
 		log.Fatal(err)
 	}
 	return &testdb{
-		UserStore: db.NewMongoUserStore(client),
+		UserStore: db.NewMongoUserStore(client, db.DBNAMETEST),
 	}
 }
 
@@ -34,4 +34,16 @@ func (tdb *testdb) teardown(t *testing.T) {
 func TestHandlePostUser_Success(t *testing.T) {
 	db := setup(t)
 	defer db.teardown(t)
+
+	// userParams := types.CreateUserParams{FirstName: "Pedram", LastName: "BR", Email: "p@gmail.com", Password: "123"}
+
+	// user, err := types.NewUserFromParams(userParams)
+	// if err != nil {
+	// 	t.Fail(err)
+	// }
+
+	// if err := testStore.InsertUser(context.Context(), user); err != nil {
+	// 	t.Fail(err)
+	// }
+
 }
