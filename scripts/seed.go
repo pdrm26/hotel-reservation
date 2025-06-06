@@ -7,6 +7,8 @@ import (
 
 	"github.com/pdrm26/hotel-reservation/db"
 	"github.com/pdrm26/hotel-reservation/types"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -14,6 +16,7 @@ import (
 var hotel = types.Hotel{
 	Name:     "hotel 1",
 	Location: "NYC",
+	Rooms:    []primitive.ObjectID{},
 }
 
 var rooms = []types.Room{
@@ -28,8 +31,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	hotelStore := db.NewMongoHotelStore(client, db.DBNAME)
-	roomStore := db.NewMongoRoomStore(client, db.DBNAME)
+	hotelStore := db.NewMongoHotelStore(client)
+	roomStore := db.NewMongoRoomStore(client, hotelStore)
 
 	insertedHotel, err := hotelStore.InsertHotel(context.Background(), &hotel)
 	if err != nil {
@@ -42,7 +45,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-
+		roomStore.HotelStore.UpdateHotel(context.Background(), bson.M{"_id": insertedHotel.ID}, bson.M{"_id": insertedRoom.ID})
 		fmt.Println(insertedRoom)
 	}
 }
