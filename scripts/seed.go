@@ -2,54 +2,67 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/pdrm26/hotel-reservation/db"
 	"github.com/pdrm26/hotel-reservation/types"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var hotel = types.Hotel{
-	Name:     "hotel 1",
-	Location: "NYC",
-	Rooms:    []primitive.ObjectID{},
-}
+var (
+	ctx        = context.Background()
+	client     *mongo.Client
+	hotelStore db.HotelStore
+	roomStore  db.RoomStore
+)
 
-var rooms = []types.Room{
-	{Type: types.SingleRoomType, BasePrice: 99.10},
-	{Type: types.DoubleRoomType, BasePrice: 120},
-	{Type: types.DeluxRoomType, BasePrice: 320},
-}
-
-func main() {
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(db.DBURI))
+func init() {
+	var err error
+	client, err = mongo.Connect(ctx, options.Client().ApplyURI(db.DBURI))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err := client.Database(db.DBNAME).Drop(context.Background()); err != nil {
+	if err := client.Database(db.DBNAME).Drop(ctx); err != nil {
 		log.Fatal(err)
 	}
 
-	hotelStore := db.NewMongoHotelStore(client)
-	roomStore := db.NewMongoRoomStore(client, hotelStore)
+	hotelStore = db.NewMongoHotelStore(client)
+	roomStore = db.NewMongoRoomStore(client, hotelStore)
 
-	insertedHotel, err := hotelStore.InsertHotel(context.Background(), &hotel)
+}
+
+func seedHotel(name, location string) {
+	var hotel = types.Hotel{
+		Name:     name,
+		Location: location,
+		Rooms:    []primitive.ObjectID{},
+	}
+
+	var rooms = []types.Room{
+		{Type: types.SingleRoomType, BasePrice: 99.10},
+		{Type: types.DoubleRoomType, BasePrice: 120},
+		{Type: types.DeluxRoomType, BasePrice: 320},
+	}
+
+	insertedHotel, err := hotelStore.InsertHotel(ctx, &hotel)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for _, room := range rooms {
 		room.HotelID = insertedHotel.ID
-		insertedRoom, err := roomStore.InsertRoom(context.Background(), &room)
+		_, err := roomStore.InsertRoom(ctx, &room)
 		if err != nil {
 			log.Fatal(err)
 		}
-		roomStore.HotelStore.UpdateHotel(context.Background(), bson.M{"_id": insertedHotel.ID}, bson.M{"_id": insertedRoom.ID})
-		fmt.Println(insertedRoom)
 	}
+}
+
+func main() {
+	seedHotel("The cozy hotel", "France")
+	seedHotel("Bautopa", "South Africa")
+	seedHotel("Hilton", "USA")
 }
