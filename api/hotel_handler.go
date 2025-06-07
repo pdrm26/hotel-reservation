@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/pdrm26/hotel-reservation/db"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -27,13 +28,13 @@ func (h *HotelHandler) HanldeGetHotels(c *fiber.Ctx) error {
 	return c.JSON(hotels)
 }
 
-func (h *HotelHandler) HandleGetRoomsHotel(c *fiber.Ctx) error {
+func (h *HotelHandler) HandleGetRooms(c *fiber.Ctx) error {
 	hotelIDStr := c.Params("id")
 	hotelID, err := primitive.ObjectIDFromHex(hotelIDStr)
 	if err != nil {
 		return err
 	}
-	rooms, err := h.roomStore.GetRooms(c.Context(), hotelID)
+	rooms, err := h.roomStore.GetRooms(c.Context(), bson.M{"hotelID": hotelID})
 	if err != nil {
 		return err
 	}
