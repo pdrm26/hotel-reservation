@@ -11,6 +11,7 @@ import (
 
 type RoomStore interface {
 	InsertRoom(ctx context.Context, room *types.Room) (*types.Room, error)
+	GetRooms(ctx context.Context, hotelID primitive.ObjectID) ([]*types.Room, error)
 }
 
 type MongoRoomStore struct {
@@ -25,6 +26,21 @@ func NewMongoRoomStore(client *mongo.Client, hotelStore HotelStore) *MongoRoomSt
 		coll:       client.Database(DBNAME).Collection("rooms"),
 		HotelStore: hotelStore,
 	}
+}
+
+func (s *MongoRoomStore) GetRooms(ctx context.Context, hotelID primitive.ObjectID) ([]*types.Room, error) {
+	cursor, err := s.coll.Find(ctx, bson.M{"hotelID": hotelID})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var rooms []*types.Room
+	if err := cursor.All(ctx, &rooms); err != nil {
+		return nil, err
+	}
+
+	return rooms, nil
 }
 
 func (s *MongoRoomStore) InsertRoom(ctx context.Context, room *types.Room) (*types.Room, error) {
