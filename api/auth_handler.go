@@ -3,6 +3,8 @@ package api
 import (
 	"errors"
 	"fmt"
+	"os"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt"
@@ -18,6 +20,11 @@ type AuthHandler struct {
 type AuthParams struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+type AuthResponse struct {
+	User  *types.User `json:"user"`
+	Token string      `json:"token"`
 }
 
 func NewAuthHandler(userStore db.UserStore) *AuthHandler {
@@ -44,10 +51,27 @@ func (h *UserHandler) HandleAuthenticate(c *fiber.Ctx) error {
 		return fmt.Errorf("invalid credentials")
 	}
 
-	t := jwt.New(jwt.SigningMethodES256)
-	s, err := t.SigningString()
-	if err != nil {
-		return err
+	return c.JSON(AuthResponse{
+		User:  user,
+		Token: createTokenFromUser(user),
+	})
+}
+
+func createTokenFromUser(user *types.User) string {
+	now := time.Now()
+	validTill := now.Add(time.Hour * 4)
+	claims := jwt.MapClaims{
+		"id":        user.ID,
+		"email":     user.Email,
+		"validTill": validTill,
 	}
-	return c.JSON(map[string]string{"token": s})
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	secret := os.Getenv("JWT_SECRET")
+	tokenStr, err := token.SignedString([]byte(secret))
+	if err != nil {
+		fmt.Println("failed to sign token with secret", err)
+	}
+
+	return tokenStr
 }
