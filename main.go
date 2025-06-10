@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
 	"github.com/pdrm26/hotel-reservation/api"
 	"github.com/pdrm26/hotel-reservation/api/middleware"
 	"github.com/pdrm26/hotel-reservation/db"
@@ -21,6 +22,9 @@ var config = fiber.Config{
 }
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
 	listenAddr := flag.String("listenAddr", ":5000", "The listen address of the API server")
 	flag.Parse()
