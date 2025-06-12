@@ -33,7 +33,7 @@ func NewAuthHandler(userStore db.UserStore) *AuthHandler {
 	}
 }
 
-func (h *UserHandler) HandleAuthenticate(c *fiber.Ctx) error {
+func (h *AuthHandler) HandleAuthenticate(c *fiber.Ctx) error {
 	var params AuthParams
 	if err := c.BodyParser(&params); err != nil {
 		return err
