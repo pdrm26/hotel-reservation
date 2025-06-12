@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -36,22 +37,30 @@ func (tdb *testdb) teardown(t *testing.T) {
 
 }
 
-func TestHandlePostUser_Success(t *testing.T) {
+func TestHandlePostUserSuccess(t *testing.T) {
 	db := setup(t)
 	defer db.teardown(t)
 
 	app := fiber.New()
 	userHandler := NewUserHandler(db.UserStore)
-
 	app.Post("/", userHandler.HandlePostUser)
 
 	params := types.CreateUserParams{FirstName: "Negar", LastName: "Yekta", Email: "negar@gmail.com", Password: "123456Negar"}
 	b, _ := json.Marshal(params)
 	req := httptest.NewRequest("POST", "/", bytes.NewReader(b))
 	req.Header.Add("Content-Type", "application/json")
-	resp, _ := app.Test(req)
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected http status be 200 got %d", resp.StatusCode)
+	}
+
 	var user types.User
-	json.NewDecoder(resp.Body).Decode(&user)
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		t.Fatal(err)
+	}
 
 	if len(user.ID) == 0 {
 		t.Errorf("Expected a userID to be set")
