@@ -51,7 +51,7 @@ func TestAuthenticateSuccess(t *testing.T) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected http status be 200 got %d", resp.StatusCode)
+		t.Fatalf("Expected http status to be 200 got %d", resp.StatusCode)
 	}
 
 	var authResp AuthResponse
@@ -66,5 +66,36 @@ func TestAuthenticateSuccess(t *testing.T) {
 	insertedUser.EncryptedPassword = ""
 	if !reflect.DeepEqual(insertedUser, authResp.User) {
 		t.Fatalf("Expected user to be inserted user %v", insertedUser)
+	}
+}
+
+func TestAuthenticateWithWrongPassword(t *testing.T) {
+	db := setup(t)
+	defer db.teardown(t)
+	seedUser(db.UserStore)
+
+	app := fiber.New()
+	authHandler := NewAuthHandler(db.UserStore)
+	app.Post("/auth", authHandler.HandleAuthenticate)
+
+	b, _ := json.Marshal(AuthParams{Email: "pedram@gmail.com", Password: "incorrectpassword"})
+	req := httptest.NewRequest("POST", "/auth", bytes.NewReader(b))
+	req.Header.Add("Content-Type", "application/json")
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("Expected http status to be %d got %d", http.StatusBadRequest, resp.StatusCode)
+	}
+
+	var genResp genericResp
+	if err := json.NewDecoder(resp.Body).Decode(&genResp); err != nil {
+		t.Fatal(err)
+	}
+
+	if genResp.Message != "invalid credentials" {
+		t.Fatalf("expected message like <invalid credentials> but got %s", genResp.Message)
 	}
 }
