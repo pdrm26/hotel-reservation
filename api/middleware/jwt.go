@@ -7,6 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt"
+	"github.com/pdrm26/hotel-reservation/db"
 )
 
 type Claim struct {
@@ -15,39 +16,49 @@ type Claim struct {
 	ValidTill string `json:"validtill"`
 }
 
-func JWTAuthentication(c *fiber.Ctx) error {
-	tokenHeaders := c.GetReqHeaders()["X-Api-Token"]
-	if len(tokenHeaders) == 0 {
-		return c.JSON(fiber.Map{"error": "unauthorized"})
-	}
+func JWTAuthentication(userStore db.UserStore) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		tokenHeaders := c.GetReqHeaders()["X-Api-Token"]
+		if len(tokenHeaders) == 0 {
+			return c.JSON(fiber.Map{"error": "unauthorized"})
+		}
 
-	token := tokenHeaders[0]
-	claims, err := validateToken(token)
-	if err != nil {
-		return c.JSON(fiber.Map{"error": "unauthorized"})
-	}
+		token := tokenHeaders[0]
+		claims, err := validateToken(token)
+		if err != nil {
+			return c.JSON(fiber.Map{"error": "unauthorized"})
+		}
 
-	expires, exists := claims["expires"]
-	if !exists {
-		return c.JSON(fiber.Map{"error": "unauthorized"})
-	}
+		expires, exists := claims["expires"]
+		if !exists {
+			return c.JSON(fiber.Map{"error": "unauthorized"})
+		}
 
-	expiresStr, ok := expires.(string)
-	if !ok {
-		return c.JSON(fiber.Map{"error": "unauthorized - invalid expiration format"})
-	}
+		expiresStr, ok := expires.(string)
+		if !ok {
+			return c.JSON(fiber.Map{"error": "unauthorized - invalid expiration format"})
+		}
 
-	expirationTime, err := time.Parse(time.RFC3339, expiresStr)
-	if err != nil {
-		return c.JSON(fiber.Map{"error": "unauthorized - cannot parse expiration"})
-	}
+		expirationTime, err := time.Parse(time.RFC3339, expiresStr)
+		if err != nil {
+			return c.JSON(fiber.Map{"error": "unauthorized - cannot parse expiration"})
+		}
 
-	now := time.Now()
-	if now.After(expirationTime) {
-		return c.JSON(fiber.Map{"error": "unauthorized - token expired"})
-	}
+		now := time.Now()
+		if now.After(expirationTime) {
+			return c.JSON(fiber.Map{"error": "unauthorized - token expired"})
+		}
 
-	return c.Next()
+		userID := claims["id"].(string)
+		user, err := userStore.GetUserByID(c.Context(), userID)
+		if err != nil {
+			return c.JSON(fiber.Map{"error": "unauthorized"})
+		}
+
+		c.Context().SetUserValue("user", user)
+
+		return c.Next()
+	}
 }
 
 func validateToken(tokenStr string) (jwt.MapClaims, error) {
