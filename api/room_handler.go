@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -52,9 +51,10 @@ func (h *RoomHandler) HandleBookRoom(c *fiber.Ctx) error {
 		EndDate:   params.EndDate,
 	}
 
-	fmt.Println("%+v", book)
+	inserted, err := h.store.Booking.InsertBooking(c.Context(), &book)
+	if err != nil {
+		return err
+	}
 
-	// h.store.Room.BookRoom(book)
-
-	return nil
+	return c.JSON(inserted)
 }
