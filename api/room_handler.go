@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/pdrm26/hotel-reservation/db"
 	"github.com/pdrm26/hotel-reservation/types"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -17,14 +19,34 @@ type BookRoomParams struct {
 	EndDate   time.Time `json:"endDate"`
 }
 
+func isRoomAvailable(ctx context.Context, bookingStore db.BookingStore, roomID primitive.ObjectID, startDate, endDate time.Time) (bool, error) {
+	filter := bson.M{
+		"roomID":    roomID,
+		"startDate": bson.M{"$lt": endDate},
+		"endDate":   bson.M{"$gt": startDate},
+	}
+
+	bookings, err := bookingStore.GetBookings(ctx, filter)
+	if err != nil {
+		return false, err
+	}
+
+	return len(bookings) == 0, nil
+}
+
 func (p BookRoomParams) validate() error {
 	now := time.Now()
+
+	// Validate that the booking is not in the past
 	if now.After(p.StartDate) || now.After(p.EndDate) {
 		return fmt.Errorf("cannot book a room in the past")
 	}
+
+	// Validate that start date is before end date
 	if p.StartDate.After(p.EndDate) {
 		return fmt.Errorf("cannot set enddate before startdate")
 	}
+
 	return nil
 }
 
@@ -43,12 +65,11 @@ func (h *RoomHandler) HandleBookRoom(c *fiber.Ctx) error {
 	if err := c.BodyParser(&params); err != nil {
 		return err
 	}
-	if err := params.validate(); err != nil {
+	roomID, err := primitive.ObjectIDFromHex(c.Params("id"))
+	if err != nil {
 		return err
 	}
-
-	roomId, err := primitive.ObjectIDFromHex(c.Params("id"))
-	if err != nil {
+	if err := params.validate(); err != nil {
 		return err
 	}
 	user, ok := c.Context().Value("user").(*types.User)
@@ -58,9 +79,19 @@ func (h *RoomHandler) HandleBookRoom(c *fiber.Ctx) error {
 		})
 	}
 
+	available, err := isRoomAvailable(c.Context(), h.store.Booking, roomID, params.StartDate, params.EndDate)
+	if err != nil {
+		return fmt.Errorf("could not check room availability: %w", err)
+	}
+	if !available {
+		return c.Status(http.StatusBadRequest).JSON(genericResp{
+			Message: "This room is already booked during the selected time.",
+		})
+	}
+
 	book := types.Booking{
 		UserID:    user.ID,
-		RoomID:    roomId,
+		RoomID:    roomID,
 		NumGuests: params.NumGuests,
 		StartDate: params.StartDate,
 		EndDate:   params.EndDate,
