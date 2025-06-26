@@ -11,7 +11,8 @@ import (
 )
 
 type testdb struct {
-	db.UserStore
+	client *mongo.Client
+	*db.Store
 }
 
 func setup(t *testing.T) *testdb {
@@ -19,13 +20,21 @@ func setup(t *testing.T) *testdb {
 	if err != nil {
 		log.Fatal(err)
 	}
+	hotelStore := db.NewMongoHotelStore(client)
+	store := &db.Store{
+		User:    db.NewMongoUserStore(client),
+		Hotel:   hotelStore,
+		Room:    db.NewMongoRoomStore(client, hotelStore),
+		Booking: db.NewMongoBookingStore(client),
+	}
 	return &testdb{
-		UserStore: db.NewMongoUserStore(client),
+		client: client,
+		Store:  store,
 	}
 }
 
 func (tdb *testdb) teardown(t *testing.T) {
-	if err := tdb.UserStore.Drop(context.TODO()); err != nil {
+	if err := tdb.client.Database(db.DBNAME).Drop(context.TODO()); err != nil {
 		t.Fatal(err)
 	}
 }

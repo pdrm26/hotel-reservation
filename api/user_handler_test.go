@@ -16,7 +16,7 @@ func TestHandlePostUserSuccess(t *testing.T) {
 	defer db.teardown(t)
 
 	app := fiber.New()
-	userHandler := NewUserHandler(db.UserStore)
+	userHandler := NewUserHandler(db.User)
 	app.Post("/", userHandler.HandlePostUser)
 
 	params := types.CreateUserParams{FirstName: "Negar", LastName: "Yekta", Email: "negar@gmail.com", Password: "123456Negar"}

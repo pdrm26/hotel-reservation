@@ -36,10 +36,10 @@ func seedUser(db db.UserStore) *types.User {
 func TestAuthenticateSuccess(t *testing.T) {
 	db := setup(t)
 	defer db.teardown(t)
-	insertedUser := seedUser(db.UserStore)
+	insertedUser := seedUser(db.User)
 
 	app := fiber.New()
-	authHandler := NewAuthHandler(db.UserStore)
+	authHandler := NewAuthHandler(db.User)
 	app.Post("/auth", authHandler.HandleAuthenticate)
 
 	b, _ := json.Marshal(AuthParams{Email: "pedram@gmail.com", Password: "12345678"})
@@ -72,10 +72,10 @@ func TestAuthenticateSuccess(t *testing.T) {
 func TestAuthenticateWithWrongPassword(t *testing.T) {
 	db := setup(t)
 	defer db.teardown(t)
-	seedUser(db.UserStore)
+	seedUser(db.User)
 
 	app := fiber.New()
-	authHandler := NewAuthHandler(db.UserStore)
+	authHandler := NewAuthHandler(db.User)
 	app.Post("/auth", authHandler.HandleAuthenticate)
 
 	b, _ := json.Marshal(AuthParams{Email: "pedram@gmail.com", Password: "incorrectpassword"})
