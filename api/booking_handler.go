@@ -40,9 +40,9 @@ func (h *BookingHandler) HandleGetBooking(c *fiber.Ctx) error {
 		return err
 	}
 
-	user, ok := c.Context().UserValue("user").(*types.User)
-	if !ok {
-		return c.Status(http.StatusUnauthorized).JSON(genericResp{Message: "Unauthorized"})
+	user, err := getAuthUser(c)
+	if err != nil {
+		return err
 	}
 
 	if bookings.UserID != user.ID {
