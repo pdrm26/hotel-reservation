@@ -2,7 +2,9 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,6 +15,70 @@ import (
 	"github.com/pdrm26/hotel-reservation/db/fixtures"
 	"github.com/pdrm26/hotel-reservation/types"
 )
+
+func TestNonOwnerCannotGetBooking(t *testing.T) {
+	db := setup(t)
+	defer db.teardown(t)
+
+	anotherUser := fixtures.AddUser(db.Store, "jack", "joe", false)
+	user := fixtures.AddUser(db.Store, "jack", "joe", false)
+	hotel := fixtures.AddHotel(db.Store, "Hilton", "UK", 5, nil)
+	room := fixtures.AddRoom(db.Store, "small", true, 99.9, hotel.ID)
+	booking := fixtures.AddBooking(db.Store, room.ID, user.ID, 3, time.Now(), time.Now().AddDate(0, 0, 3))
+
+	app := fiber.New()
+	route := app.Group("/", middleware.JWTAuthentication(db.User))
+	bookingHandler := NewBookingHandler(db.Store)
+	route.Get("/:id", bookingHandler.HandleGetBooking)
+
+	req := httptest.NewRequest("GET", fmt.Sprintf("/%s", booking.Id.Hex()), nil)
+	req.Header.Add("X-Api-Token", CreateTokenFromUser(anotherUser))
+
+	res, err := app.Test(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if res.StatusCode == http.StatusOK {
+		log.Fatalf("expected %d but got %d", http.StatusUnauthorized, res.StatusCode)
+	}
+}
+func TestGetBooking(t *testing.T) {
+	db := setup(t)
+	defer db.teardown(t)
+
+	user := fixtures.AddUser(db.Store, "jack", "joe", false)
+	hotel := fixtures.AddHotel(db.Store, "Hilton", "UK", 5, nil)
+	room := fixtures.AddRoom(db.Store, "small", true, 99.9, hotel.ID)
+	booking := fixtures.AddBooking(db.Store, room.ID, user.ID, 3, time.Now(), time.Now().AddDate(0, 0, 3))
+
+	app := fiber.New()
+	route := app.Group("/", middleware.JWTAuthentication(db.User))
+	bookingHandler := NewBookingHandler(db.Store)
+	route.Get("/:id", bookingHandler.HandleGetBooking)
+
+	req := httptest.NewRequest("GET", fmt.Sprintf("/%s", booking.Id.Hex()), nil)
+	req.Header.Add("X-Api-Token", CreateTokenFromUser(user))
+
+	res, err := app.Test(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		log.Fatalf("expected %d but got %d", http.StatusOK, res.StatusCode)
+	}
+
+	var book *types.Booking
+	if err := json.NewDecoder(res.Body).Decode(&book); err != nil {
+		log.Fatal(err)
+	}
+
+	if book.Id != booking.Id {
+		t.Fatalf("expected %s but got %s", booking.Id, book.Id)
+	}
+
+}
 
 func TestAdminCanRetrieveAllBookings(t *testing.T) {
 	db := setup(t)
