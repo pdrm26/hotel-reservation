@@ -11,8 +11,6 @@ func AdminAuth(c *fiber.Ctx) error {
 
 	user, ok := c.Context().UserValue("user").(*types.User)
 
-	fmt.Println(user)
-
 	if !ok {
 		return fmt.Errorf("not authorized")
 	}
