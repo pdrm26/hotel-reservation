@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -20,39 +21,39 @@ func JWTAuthentication(userStore db.UserStore) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		tokenHeaders := c.GetReqHeaders()["X-Api-Token"]
 		if len(tokenHeaders) == 0 {
-			return c.JSON(fiber.Map{"error": "unauthorized"})
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 		}
 
 		token := tokenHeaders[0]
 		claims, err := validateToken(token)
 		if err != nil {
-			return c.JSON(fiber.Map{"error": "unauthorized"})
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 		}
 
 		expires, exists := claims["expires"]
 		if !exists {
-			return c.JSON(fiber.Map{"error": "unauthorized"})
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 		}
 
 		expiresStr, ok := expires.(string)
 		if !ok {
-			return c.JSON(fiber.Map{"error": "unauthorized - invalid expiration format"})
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized - invalid expiration format"})
 		}
 
 		expirationTime, err := time.Parse(time.RFC3339, expiresStr)
 		if err != nil {
-			return c.JSON(fiber.Map{"error": "unauthorized - cannot parse expiration"})
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized - cannot parse expiration"})
 		}
 
 		now := time.Now()
 		if now.After(expirationTime) {
-			return c.JSON(fiber.Map{"error": "unauthorized - token expired"})
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized - token expired"})
 		}
 
 		userID := claims["id"].(string)
 		user, err := userStore.GetUserByID(c.Context(), userID)
 		if err != nil {
-			return c.JSON(fiber.Map{"error": "unauthorized"})
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 		}
 
 		c.Context().SetUserValue("user", user)
