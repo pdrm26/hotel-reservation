@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 	"time"
 
@@ -20,42 +19,39 @@ type Claim struct {
 
 func JWTAuthentication(userStore db.UserStore) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		tokenHeaders := c.GetReqHeaders()["X-Api-Token"]
-		if len(tokenHeaders) == 0 {
-			// return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error1": "unauthorized"})
-			return core.NotAuthorizedError()
+		token := c.Get("X-Api-Token")
+		if token == "" {
+			return core.TokenMissingError()
 		}
 
-		token := tokenHeaders[0]
 		claims, err := validateToken(token)
 		if err != nil {
-			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+			return core.TokenInvalidError()
 		}
 
 		expires, exists := claims["expires"]
 		if !exists {
-			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+			return core.TokenInvalidError()
 		}
 
 		expiresStr, ok := expires.(string)
 		if !ok {
-			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized - invalid expiration format"})
+			return core.TokenInvalidError()
 		}
 
 		expirationTime, err := time.Parse(time.RFC3339, expiresStr)
 		if err != nil {
-			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized - cannot parse expiration"})
+			return core.TokenInvalidError()
 		}
 
-		now := time.Now()
-		if now.After(expirationTime) {
-			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized - token expired"})
+		if time.Now().After(expirationTime) {
+			return core.TokenExpiredError()
 		}
 
 		userID := claims["id"].(string)
 		user, err := userStore.GetUserByID(c.Context(), userID)
 		if err != nil {
-			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+			return core.NotFoundError("user")
 		}
 
 		c.Context().SetUserValue("user", user)
@@ -68,7 +64,7 @@ func validateToken(tokenStr string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			fmt.Println("invalid signin method", t.Header["alg"])
-			return nil, fmt.Errorf("unauthorized")
+			return nil, core.UnAuthorizedError()
 		}
 		secret := os.Getenv("JWT_SECRET")
 		return []byte(secret), nil
@@ -76,17 +72,17 @@ func validateToken(tokenStr string) (jwt.MapClaims, error) {
 
 	if err != nil {
 		fmt.Println("failed to parse JWT token:", err)
-		return nil, fmt.Errorf("unauthorized")
+		return nil, core.TokenInvalidError()
 	}
 
 	if !token.Valid {
 		fmt.Println("invalid token")
-		return nil, fmt.Errorf("unauthorized")
+		return nil, core.TokenInvalidError()
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return nil, fmt.Errorf("unauthorized")
+		return nil, core.UnAuthorizedError()
 	}
 
 	return claims, nil

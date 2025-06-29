@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/pdrm26/hotel-reservation/core"
 	"github.com/pdrm26/hotel-reservation/db"
 	"github.com/pdrm26/hotel-reservation/types"
 	"go.mongodb.org/mongo-driver/bson"
@@ -27,9 +28,9 @@ func (h *UserHandler) HandleGetUser(c *fiber.Ctx) error {
 	user, err := h.userStore.GetUserByID(c.Context(), id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return c.JSON(map[string]string{"message": "Not Found"})
+			return core.NotFoundError("user")
 		}
-		return err
+		return core.InvalidIDError()
 	}
 	return c.JSON(user)
 }
@@ -37,7 +38,7 @@ func (h *UserHandler) HandleGetUser(c *fiber.Ctx) error {
 func (h *UserHandler) HandleGetUsers(c *fiber.Ctx) error {
 	users, err := h.userStore.GetUsers(c.Context())
 	if err != nil {
-		return err
+		return core.NotFoundError("users")
 	}
 	return c.JSON(users)
 }
@@ -45,7 +46,7 @@ func (h *UserHandler) HandleGetUsers(c *fiber.Ctx) error {
 func (h *UserHandler) HandlePostUser(c *fiber.Ctx) error {
 	var userParams types.CreateUserParams
 	if err := c.BodyParser(&userParams); err != nil {
-		return err
+		return core.BadRequestError()
 	}
 
 	user, err := types.NewUserFromParams(userParams)
@@ -76,7 +77,7 @@ func (h *UserHandler) HandlePutUser(c *fiber.Ctx) error {
 	)
 
 	if err := c.BodyParser(&params); err != nil {
-		return err
+		return core.BadRequestError()
 	}
 
 	oid, err := primitive.ObjectIDFromHex(userID)
