@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/pdrm26/hotel-reservation/core"
 	"github.com/pdrm26/hotel-reservation/db/fixtures"
 )
 
@@ -17,7 +18,7 @@ func TestAuthenticateSuccess(t *testing.T) {
 	defer db.teardown(t)
 	insertedUser := fixtures.AddUser(db.Store, "jack", "joe", false)
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{ErrorHandler: core.ErrorHandler})
 	authHandler := NewAuthHandler(db.User)
 	app.Post("/auth", authHandler.HandleAuthenticate)
 
@@ -53,7 +54,7 @@ func TestAuthenticateWithWrongPassword(t *testing.T) {
 	defer db.teardown(t)
 	fixtures.AddUser(db.Store, "jack", "joe", false)
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{ErrorHandler: core.ErrorHandler})
 	authHandler := NewAuthHandler(db.User)
 	app.Post("/auth", authHandler.HandleAuthenticate)
 

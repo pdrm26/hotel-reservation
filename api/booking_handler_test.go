@@ -11,8 +11,9 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/pdrm26/hotel-reservation/api/middleware"
+	"github.com/pdrm26/hotel-reservation/core"
 	"github.com/pdrm26/hotel-reservation/db/fixtures"
+	"github.com/pdrm26/hotel-reservation/middleware"
 	"github.com/pdrm26/hotel-reservation/types"
 )
 
@@ -26,7 +27,7 @@ func TestNonOwnerCannotGetBooking(t *testing.T) {
 	room := fixtures.AddRoom(db.Store, "small", true, 99.9, hotel.ID)
 	booking := fixtures.AddBooking(db.Store, room.ID, user.ID, 3, time.Now(), time.Now().AddDate(0, 0, 3))
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{ErrorHandler: core.ErrorHandler})
 	route := app.Group("/", middleware.JWTAuthentication(db.User))
 	bookingHandler := NewBookingHandler(db.Store)
 	route.Get("/:id", bookingHandler.HandleGetBooking)
@@ -52,7 +53,7 @@ func TestGetBooking(t *testing.T) {
 	room := fixtures.AddRoom(db.Store, "small", true, 99.9, hotel.ID)
 	booking := fixtures.AddBooking(db.Store, room.ID, user.ID, 3, time.Now(), time.Now().AddDate(0, 0, 3))
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{ErrorHandler: core.ErrorHandler})
 	route := app.Group("/", middleware.JWTAuthentication(db.User))
 	bookingHandler := NewBookingHandler(db.Store)
 	route.Get("/:id", bookingHandler.HandleGetBooking)
@@ -89,7 +90,7 @@ func TestAdminCanRetrieveAllBookings(t *testing.T) {
 	room := fixtures.AddRoom(db.Store, "small", true, 99.10, hotel.ID)
 	booking := fixtures.AddBooking(db.Store, room.ID, adminUser.ID, 2, time.Now(), time.Now().AddDate(0, 0, 2))
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{ErrorHandler: core.ErrorHandler})
 	admin := app.Group("/", middleware.JWTAuthentication(db.User), middleware.AdminAuth)
 	bookingHandler := NewBookingHandler(db.Store)
 	admin.Get("/", bookingHandler.HandleGetBookings)
@@ -130,7 +131,7 @@ func TestNormalUserCannotRetrieveAllBookings(t *testing.T) {
 	room := fixtures.AddRoom(db.Store, "small", true, 99.9, hotel.ID)
 	fixtures.AddBooking(db.Store, room.ID, user.ID, 3, time.Now(), time.Now().AddDate(0, 0, 3))
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{ErrorHandler: core.ErrorHandler})
 	admin := app.Group("/", middleware.JWTAuthentication(db.User), middleware.AdminAuth)
 	bookingHandler := NewBookingHandler(db.Store)
 	admin.Get("/", bookingHandler.HandleGetBookings)

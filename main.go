@@ -9,17 +9,12 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 	"github.com/pdrm26/hotel-reservation/api"
-	"github.com/pdrm26/hotel-reservation/api/middleware"
+	"github.com/pdrm26/hotel-reservation/core"
 	"github.com/pdrm26/hotel-reservation/db"
+	"github.com/pdrm26/hotel-reservation/middleware"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
-
-var config = fiber.Config{
-	ErrorHandler: func(c *fiber.Ctx, err error) error {
-		return c.JSON(map[string]string{"error": err.Error()})
-	},
-}
 
 func main() {
 	if err := godotenv.Load(); err != nil {
@@ -51,7 +46,7 @@ func main() {
 		authHandler    = api.NewAuthHandler(userStore)
 		roomHandler    = api.NewRoomHandler(store)
 		bookingHandler = api.NewBookingHandler(store)
-		app            = fiber.New(config)
+		app            = fiber.New(fiber.Config{ErrorHandler: core.ErrorHandler})
 		auth           = app.Group("/api")
 		apiv1          = app.Group("/api/v1", middleware.JWTAuthentication(userStore))
 		admin          = apiv1.Group("/admin", middleware.AdminAuth)

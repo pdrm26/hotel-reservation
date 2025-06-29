@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/pdrm26/hotel-reservation/core"
 	"github.com/pdrm26/hotel-reservation/types"
 )
 
@@ -15,7 +16,7 @@ func TestHandlePostUserSuccess(t *testing.T) {
 	db := setup(t)
 	defer db.teardown(t)
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{ErrorHandler: core.ErrorHandler})
 	userHandler := NewUserHandler(db.User)
 	app.Post("/", userHandler.HandlePostUser)
 
