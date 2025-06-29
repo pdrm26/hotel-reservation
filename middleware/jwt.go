@@ -8,6 +8,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt"
+	"github.com/pdrm26/hotel-reservation/core"
 	"github.com/pdrm26/hotel-reservation/db"
 )
 
@@ -21,7 +22,8 @@ func JWTAuthentication(userStore db.UserStore) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		tokenHeaders := c.GetReqHeaders()["X-Api-Token"]
 		if len(tokenHeaders) == 0 {
-			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+			// return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error1": "unauthorized"})
+			return core.NotAuthorizedError()
 		}
 
 		token := tokenHeaders[0]
