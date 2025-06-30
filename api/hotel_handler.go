@@ -4,9 +4,16 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/pdrm26/hotel-reservation/core"
 	"github.com/pdrm26/hotel-reservation/db"
+	"github.com/pdrm26/hotel-reservation/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
+
+type HotelsResp struct {
+	Data    []*types.Hotel `json:"data"`
+	Page    int64          `json:"page"`
+	Results int            `json:"results"`
+}
 
 type HotelHandler struct {
 	store *db.Store
@@ -26,7 +33,7 @@ func (h *HotelHandler) HanldeGetHotels(c *fiber.Ctx) error {
 		return core.NotFoundError("hotels")
 	}
 
-	return c.JSON(hotels)
+	return c.JSON(HotelsResp{Data: hotels, Page: paginateFilter.Page, Results: len(hotels)})
 }
 
 func (h *HotelHandler) HandleGetHotel(c *fiber.Ctx) error {
