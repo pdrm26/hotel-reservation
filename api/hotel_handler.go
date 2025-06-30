@@ -1,6 +1,9 @@
 package api
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/pdrm26/hotel-reservation/core"
 	"github.com/pdrm26/hotel-reservation/db"
@@ -18,11 +21,28 @@ func NewHotelHandler(store *db.Store) *HotelHandler {
 }
 
 func (h *HotelHandler) HanldeGetHotels(c *fiber.Ctx) error {
-	var page int64 = 1
-	var limit int64 = 10
+	pageParam := c.Query("page", "1")
+	limitParam := c.Query("limit", "10")
+
+	fmt.Println(pageParam, limitParam)
+
+	page, err := strconv.Atoi(pageParam)
+	fmt.Println(err)
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	limit, err := strconv.Atoi(limitParam)
+	fmt.Println(err)
+	if err != nil || limit < 1 {
+		limit = 10
+	}
+
+	fmt.Println(page, limit)
+
 	opts := options.FindOptions{}
-	opts.SetSkip((page - 1) * limit)
-	opts.SetLimit(limit)
+	opts.SetSkip(int64(page-1) * int64(limit))
+	opts.SetLimit(int64(limit))
 	hotels, err := h.store.Hotel.GetHotels(c.Context(), nil, &opts)
 	if err != nil {
 		return core.NotFoundError("hotels")
