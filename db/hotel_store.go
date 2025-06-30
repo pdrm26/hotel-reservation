@@ -43,6 +43,7 @@ func (s *MongoHotelStore) GetHotels(ctx context.Context, filter bson.M, p *Pagin
 	opts := options.FindOptions{}
 	opts.SetSkip((p.Page - 1) * p.Limit)
 	opts.SetLimit(p.Limit)
+
 	cursor, err := s.coll.Find(ctx, filter, &opts)
 	if err != nil {
 		return nil, err

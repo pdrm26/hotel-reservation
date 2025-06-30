@@ -15,6 +15,11 @@ type HotelsResp struct {
 	Results int            `json:"results"`
 }
 
+type HotelQueryParams struct {
+	db.PaginateFilter
+	Rating int
+}
+
 type HotelHandler struct {
 	store *db.Store
 }
@@ -24,16 +29,19 @@ func NewHotelHandler(store *db.Store) *HotelHandler {
 }
 
 func (h *HotelHandler) HanldeGetHotels(c *fiber.Ctx) error {
-	var paginateFilter db.PaginateFilter
-	if err := c.QueryParser(&paginateFilter); err != nil {
+	var params HotelQueryParams
+	if err := c.QueryParser(&params); err != nil {
 		return core.BadRequestError()
 	}
-	hotels, err := h.store.Hotel.GetHotels(c.Context(), nil, &paginateFilter)
+	filter := bson.M{
+		"rating": params.Rating,
+	}
+	hotels, err := h.store.Hotel.GetHotels(c.Context(), filter, &params.PaginateFilter)
 	if err != nil {
 		return core.NotFoundError("hotels")
 	}
 
-	return c.JSON(HotelsResp{Data: hotels, Page: paginateFilter.Page, Results: len(hotels)})
+	return c.JSON(HotelsResp{Data: hotels, Page: params.Page, Results: len(hotels)})
 }
 
 func (h *HotelHandler) HandleGetHotel(c *fiber.Ctx) error {
