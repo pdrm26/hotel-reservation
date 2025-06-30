@@ -6,6 +6,7 @@ import (
 	"github.com/pdrm26/hotel-reservation/db"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type HotelHandler struct {
@@ -17,7 +18,12 @@ func NewHotelHandler(store *db.Store) *HotelHandler {
 }
 
 func (h *HotelHandler) HanldeGetHotels(c *fiber.Ctx) error {
-	hotels, err := h.store.Hotel.GetHotels(c.Context(), nil)
+	var page int64 = 1
+	var limit int64 = 10
+	opts := options.FindOptions{}
+	opts.SetSkip((page - 1) * limit)
+	opts.SetLimit(limit)
+	hotels, err := h.store.Hotel.GetHotels(c.Context(), nil, &opts)
 	if err != nil {
 		return core.NotFoundError("hotels")
 	}
