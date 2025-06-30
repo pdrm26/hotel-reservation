@@ -11,7 +11,7 @@ import (
 )
 
 type HotelStore interface {
-	GetHotels(context.Context, bson.M, *options.FindOptions) ([]*types.Hotel, error)
+	GetHotels(context.Context, bson.M, *PaginateFilter) ([]*types.Hotel, error)
 	GetHotelByID(context.Context, primitive.ObjectID) (*types.Hotel, error)
 	InsertHotel(context.Context, *types.Hotel) (*types.Hotel, error)
 	UpdateHotel(context.Context, bson.M, bson.M) error
@@ -39,8 +39,11 @@ func (s *MongoHotelStore) GetHotelByID(ctx context.Context, hotelId primitive.Ob
 	return &hotel, nil
 }
 
-func (s *MongoHotelStore) GetHotels(ctx context.Context, filter bson.M, opts *options.FindOptions) ([]*types.Hotel, error) {
-	cursor, err := s.coll.Find(ctx, filter, opts)
+func (s *MongoHotelStore) GetHotels(ctx context.Context, filter bson.M, p *PaginateFilter) ([]*types.Hotel, error) {
+	opts := options.FindOptions{}
+	opts.SetSkip((p.Page - 1) * p.Limit)
+	opts.SetLimit(p.Limit)
+	cursor, err := s.coll.Find(ctx, filter, &opts)
 	if err != nil {
 		return nil, err
 	}

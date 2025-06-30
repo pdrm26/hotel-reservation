@@ -1,15 +1,11 @@
 package api
 
 import (
-	"fmt"
-	"strconv"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/pdrm26/hotel-reservation/core"
 	"github.com/pdrm26/hotel-reservation/db"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type HotelHandler struct {
@@ -21,29 +17,11 @@ func NewHotelHandler(store *db.Store) *HotelHandler {
 }
 
 func (h *HotelHandler) HanldeGetHotels(c *fiber.Ctx) error {
-	pageParam := c.Query("page", "1")
-	limitParam := c.Query("limit", "10")
-
-	fmt.Println(pageParam, limitParam)
-
-	page, err := strconv.Atoi(pageParam)
-	fmt.Println(err)
-	if err != nil || page < 1 {
-		page = 1
+	var paginateFilter db.PaginateFilter
+	if err := c.QueryParser(&paginateFilter); err != nil {
+		return core.BadRequestError()
 	}
-
-	limit, err := strconv.Atoi(limitParam)
-	fmt.Println(err)
-	if err != nil || limit < 1 {
-		limit = 10
-	}
-
-	fmt.Println(page, limit)
-
-	opts := options.FindOptions{}
-	opts.SetSkip(int64(page-1) * int64(limit))
-	opts.SetLimit(int64(limit))
-	hotels, err := h.store.Hotel.GetHotels(c.Context(), nil, &opts)
+	hotels, err := h.store.Hotel.GetHotels(c.Context(), nil, &paginateFilter)
 	if err != nil {
 		return core.NotFoundError("hotels")
 	}
