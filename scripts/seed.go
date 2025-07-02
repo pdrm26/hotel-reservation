@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/pdrm26/hotel-reservation/api"
 	"github.com/pdrm26/hotel-reservation/db"
 	"github.com/pdrm26/hotel-reservation/db/fixtures"
@@ -13,14 +15,24 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+func init() {
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file")
+	}
+}
+
 func main() {
-	ctx := context.Background()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(db.DBURL))
+	var (
+		ctx           = context.Background()
+		mongoEndpoint = os.Getenv("MONGO_DB_URL")
+		mongoDBName   = os.Getenv("MONGO_DB_NAME")
+	)
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoEndpoint))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err := client.Database(db.DBNAME).Drop(ctx); err != nil {
+	if err := client.Database(mongoDBName).Drop(ctx); err != nil {
 		log.Fatal(err)
 	}
 

@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"log"
+	"os"
 	"testing"
 
 	"github.com/pdrm26/hotel-reservation/db"
@@ -34,7 +35,8 @@ func setup(t *testing.T) *testdb {
 }
 
 func (tdb *testdb) teardown(t *testing.T) {
-	if err := tdb.client.Database(db.DBNAME).Drop(context.TODO()); err != nil {
+	mongoDBName := os.Getenv("MONGO_DB_NAME")
+	if err := tdb.client.Database(mongoDBName).Drop(context.TODO()); err != nil {
 		t.Fatal(err)
 	}
 }
