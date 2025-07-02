@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/joho/godotenv"
 	"github.com/pdrm26/hotel-reservation/db"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -16,9 +17,15 @@ type testdb struct {
 	*db.Store
 }
 
+func init() {
+	if err := godotenv.Load("../.env"); err != nil {
+		log.Fatal("Error loading .env file")
+	}
+}
+
 func setup(t *testing.T) *testdb {
-	mongoEndpoint := os.Getenv("MONGO_DB_URL")
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoEndpoint))
+	dburi := os.Getenv("MONGO_DB_URL_TEST")
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dburi))
 	if err != nil {
 		log.Fatal(err)
 	}
