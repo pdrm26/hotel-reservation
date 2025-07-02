@@ -49,4 +49,9 @@ func main() {
 	fixtures.AddBooking(store, room1.ID, pedram.ID, 2, time.Now(), time.Now().AddDate(0, 0, 2))
 	fixtures.AddBooking(store, room2.ID, jack.ID, 1, time.Now(), time.Now().AddDate(0, 0, 7))
 	fixtures.AddBooking(store, room3.ID, admin.ID, 3, time.Now(), time.Now().AddDate(0, 0, 3))
+
+	// For testing pagination and filtering
+	// for i := 0; i < 100; i++ {
+	// 	fixtures.AddHotel(store, fmt.Sprintf("The random hotel %d", i), fmt.Sprintf("Country %d", i), rand.Intn(5), nil)
+	// }
 }
