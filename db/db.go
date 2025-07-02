@@ -1,8 +1,14 @@
 package db
 
-const DBURI = "mongodb://localhost:27017"
-const DBNAME = "hotel-reservation"
-const TestDBName = "hotel-reservation-test"
+import "os"
+
+var DBNAME string
+var DBURL string
+
+func init() {
+	DBNAME = os.Getenv("MONGO_DB_NAME")
+	DBURL = os.Getenv("MONGO_DB_URL")
+}
 
 type Store struct {
 	User    UserStore

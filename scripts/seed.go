@@ -15,7 +15,7 @@ import (
 
 func main() {
 	ctx := context.Background()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(db.DBURI))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(db.DBURL))
 	if err != nil {
 		log.Fatal(err)
 	}

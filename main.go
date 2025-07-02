@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"flag"
+	"os"
 
 	"log"
 
@@ -21,11 +21,7 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	listenAddr := flag.String("listenAddr", ":5000", "The listen address of the API server")
-	flag.Parse()
-
-	// uri := os.Getenv("MONGODB_URI")
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(db.DBURI))
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(db.DBURL))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -78,5 +74,6 @@ func main() {
 	// admin handlers
 	admin.Get("/booking", bookingHandler.HandleGetBookings)
 
-	app.Listen(*listenAddr)
+	listenAddr := os.Getenv("HTTP_LISTEN_ADDRESS")
+	app.Listen(listenAddr)
 }
