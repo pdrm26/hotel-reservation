@@ -16,11 +16,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func main() {
+func init() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")
 	}
+}
 
+func main() {
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(db.DBURL))
 	if err != nil {
 		log.Fatal(err)
